@@ -2,19 +2,72 @@
 
 import React, { useEffect, useState } from 'react'
 import { useUser } from "@clerk/nextjs";
-// import { Coffee } from 'lucide-react';
+
 
 
 
 const PaymentPage = ({ username }) => {
   const { isSignedIn, user, isLoaded } = useUser();
-  const [amount, setAmount] = useState(100);
+  const [amount, setAmount] = useState("");
+   const [message, setMessage] = useState("");
 
 
-  const handlePayment = () => {
-    // Payment integration can be added here
-    console.log(`Processing payment of NPR ${amount} for ${username}`);
+   const handlePayment = async () => {
+    setMessage("⏳ Initiating payment...");
+
+    try {
+      // Fetch dummy data
+      const dummyRes = await fetch('/api/dummy-data?method=esewa');
+      if (!dummyRes.ok) throw new Error('Failed to fetch dummy data');
+      const dummy = await dummyRes.json();
+
+      // Prepare and override with user input
+      const payload = {
+        method: 'esewa',
+        amount: amount.toString(),
+        productName: dummy.productName,
+        transactionId: dummy.transactionId,
+      };
+
+      // Call backend to get eSewa config
+      const res = await fetch('/api/initiate-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) throw new Error('Failed to initiate payment');
+
+      const { amount: amt, esewaConfig } = await res.json();
+
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = 'https://rc-epay.esewa.com.np/api/epay/main/v2/form';
+
+      const finalPayload = {
+        amount: amt,
+        ...esewaConfig,
+      };
+
+      Object.entries(finalPayload).forEach(([key, value]) => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = key;
+        input.value = String(value);
+        form.appendChild(input);
+      });
+
+      document.body.appendChild(form);
+      form.submit();
+      document.body.removeChild(form);
+
+      setMessage("✅ Redirecting to eSewa...");
+    } catch (err) {
+      console.error(err);
+      setMessage("❌ Payment initiation failed.");
+    }
   };
+
 
    return (
     <div className="min-h-screen bg-black text-white font-sans">

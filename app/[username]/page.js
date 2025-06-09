@@ -1,8 +1,10 @@
+
 import React from 'react'
 import PaymentPage from '@/components/PaymentPage'
 import { notFound } from "next/navigation"
 import connectDB from '@/db/connectDB'
 import User from '@/models/User'
+import toast from 'react-hot-toast'
 
 const Username = async ({ params }) => {
   // Await params before using
@@ -21,7 +23,9 @@ const Username = async ({ params }) => {
   return (
     <>
       <PaymentPage username={username} />
+      
     </>
+   
   )
 }
 
